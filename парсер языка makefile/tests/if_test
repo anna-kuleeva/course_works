@@ -1,0 +1,156 @@
+foo1:
+	$(CC)=1
+ifeq ($(CC),1)
+	echo "Test1"
+else
+	echo "Not test1"
+endif
+
+foo2:
+	$(CC)=1
+ifdef CC
+	echo "Test2"
+else
+	echo "Not test2"
+endif
+
+foo3:
+ifeq ( "a", "a" )
+	python somefile.py
+else
+	python anotherfile.py
+endif
+
+foo4:
+	$(VAR)
+ifdef TEST
+	bison -dt makeg.y
+	flex terminals.l
+	gcc -w main.c makeg.tab.c lex.yy.c -o maker
+else
+	bison -dt makeg.y
+	flex terminals.l
+	gcc -w main.c makeg.tab.c lex.yy.c -o maker
+endif
+
+
+# all tests
+ifeq (,)
+123 = 321
+123 = 321
+else 'qwe' 'ewq'
+123 = 321
+123 = 321
+123 = 321
+else (hawida, )
+123 = 321
+else
+123 = 321
+endif
+
+ifeq (,)
+else 'qwe' 'ewq'
+123 = 321
+123 = 321
+123 = 321
+else (hawida, )
+123 = 321
+else
+123 = 321
+endif
+
+ifeq (,)
+123 = 321
+123 = 321
+else 'qwe' 'ewq'
+else (hawida, )
+123 = 321
+else
+123 = 321
+endif
+
+ifeq (,)
+123 = 321
+123 = 321
+else 'qwe' 'ewq'
+123 = 321
+123 = 321
+123 = 321
+else (hawida, )
+else
+123 = 321
+endif
+
+ifeq (,)
+123 = 321
+123 = 321
+else 'qwe' 'ewq'
+123 = 321
+123 = 321
+123 = 321
+else (hawida, )
+endif
+
+
+ifeq (,)
+123 = 321
+123 = 321
+else 'qwe' 'ewq'
+123 = 321
+123 = 321
+123 = 321
+else (hawida, )
+123 = 321
+else
+endif
+
+
+
+ifeq (,)
+else
+123 = 321
+endif
+
+
+ifeq (,)
+else
+endif
+
+ifeq (,)
+123 = 321
+else
+endif
+
+ifeq (,)
+else 'qwe' 'ewq'
+else (hawida, )
+else
+endif
+
+
+ifdef 123
+123 = 321
+else
+123 = 321
+endif
+
+ifdef 123
+123 = 321
+endif
+
+ifdef 123
+endif
+
+ifdef 123
+else
+123 = 321
+endif
+
+ifdef 123
+123 = 321
+else
+endif
+
+ifdef 123
+else
+endif

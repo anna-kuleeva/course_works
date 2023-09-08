@@ -1,0 +1,10 @@
+$(patsubst %.c,%.o,x.c.c bar.c)
+$(findstring a,a b c)
+target:=$(strip string)
+sources := foo.c bar.c baz.s ugh.h
+$(filter %.c %.s,$(((sources))))
+$(sort foo bar lose)
+$(word 2, foo bar baz)
+dirs := a b c d
+files := $(foreach dir,$(dirs,$(wildcard $dir)/*))
+

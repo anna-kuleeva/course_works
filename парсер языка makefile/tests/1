@@ -1,0 +1,24 @@
+kek = bibaboba.o werrw.o fdjkjkw.o
+objects = program.o foo.o utils.o kqweqwe.o
+foo = $(bar)
+bar = $(ugh)
+ugh = Huh?
+x := foo
+y := $(x) bar
+x := later
+lol = gcc -c ded.c -o ded 
+
+CFLAGS = $(include_dirs) -O
+include_dirs = -Ifoo -Ibar
+CFLAGS = $(CFLAGS) -O
+
+# kek
+
+$(objects): 
+	asdksa $(lol) wakd.$(foo) awk
+	awdawdaw esfsefse
+	awdjhhfhbbd
+
+lolksjsdlkv: $(kek)
+
+$(lol): heheh.h #q

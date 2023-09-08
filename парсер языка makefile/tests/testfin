@@ -1,0 +1,21 @@
+kek = bibaboba.o werrw.o fdjkjkw.o
+objects = program.o foo.o utils.o
+1123clea1en@@7y3hf_+-:
+	rm -f *.o *.yy.c *.tab.*
+
+all: clean
+	bison -dt makeg.y
+	flex terminals.l
+	gcc -w main.c makeg.tab.c lex.yy.c -o maker
+	
+main: $(objects)
+	kek $(objects)
+
+$(objects): kek.h
+kbd : kbd.c defs.h command.h     
+command : command.c defs.h command.h
+display : display..c defs.h buffer.h
+insert : insert.c defs.h buffer.h
+search : search.c defs.h buffer.h
+files : files.c defs.h buffer.h command.h
+utils : utils.c defs.h

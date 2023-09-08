@@ -1,0 +1,13 @@
+bar = $(ugh)    
+
+
+bar: kek  
+#kek
+	lol
+
+# hehe
+
+foo: a
+
+bar:
+	gcc -c make main.c

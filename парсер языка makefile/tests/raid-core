@@ -1,0 +1,173 @@
+.PHONY: install clean help arch version rpm showdep deploy uninstall show-interlayer-version install-template install-spawn install-html-doc
+
+include ENV.mk
+include docker.mk
+
+## Generic targets
+
+install: install-src install-contrib install-html-doc
+
+check-interlayer-version:
+	@use_version=$$(rpm -q raidix-core-interlayer); \
+	get_version=$$(repoquery --latest-limit 1 --nvr raidix-core-interlayer).$$(arch); \
+	if [ "$$use_version" != "$$get_version" ]; then \
+		echo -en "\033[30;41m ERROR \033[0m" "Версия $$use_version устарела. Для обновления до $$get_version запустите make docker-rebuild"; \
+		exit 1; \
+	fi
+
+install-interlayer:
+	rpm -qa | grep interlayer || sudo rpm -Uvh --nodeps $(shell repoquery --latest-limit 1 --location raidix-core-interlayer)
+
+install-template:
+	rpm -qa | grep template || sudo rpm -Uvh --nodeps $(shell repoquery --latest-limit 1 --location raidix-core-template)
+
+install-spawn:
+	rpm -qa | grep spawn || sudo rpm -Uvh --nodeps $(shell repoquery --latest-limit 1 --location raidix-core-spawn)
+
+install-src:
+ifeq ($(DISTRO), ELBRUS)
+	mkdir -p "$(DESTDIR)$(STATEDIR)/run/$(PRODUCT)"
+endif
+	$(MAKE) -C src install
+
+install-contrib:
+	$(MAKE) -C contrib install
+	mkdir -p $(DESTDIR)$(STATEDIR)/run/$(PRODUCT)
+	mkdir -p $(DESTDIR)$(STATEDIR)/log/$(PRODUCT)
+	mkdir -p $(DESTDIR)$(STATEDIR)/lib/$(PRODUCT)/license
+	mkdir -p $(DESTDIR)$(STATEDIR)/lib/$(PRODUCT)/configs
+	mkdir -p $(DESTDIR)$(STATEDIR)/lib/$(PRODUCT)/profiles
+# AVRORA-32407
+	mkdir -p $(DESTDIR)$(STATEDIR)/lib/$(PRODUCT)/guest/metadata
+	$(MAKE) -C contrib/schema install
+
+# Needs DESTDIR   - place, where html-doc will be installed
+install-html-doc: install-src
+	mkdir -p $(DESTDIR)/$(DOCS_PREFIX)
+	@if [ "$(HTML_DOCS)" == "on" ]; then $(MAKE) _install-html-doc; fi
+
+_install-html-doc:
+	$(MAKE) -C src docs;\
+	cp --preserve --recursive src/docs/. $(DESTDIR)/$(DOCS_PREFIX);\
+	echo "Documentation was written to $(DESTDIR)";\
+
+install-debug:
+	install -d "$(DESTDIR)$(STATEDIR)/lib/$(PRODUCT)/t"
+	cp -r src/t "$(DESTDIR)$(STATEDIR)/lib/$(PRODUCT)"
+	install -d "$(DESTDIR)$(STATEDIR)/lib/$(PRODUCT)/debug"
+	touch "$(DESTDIR)$(STATEDIR)/lib/$(PRODUCT)/debug/asserts"
+
+uninstall: 
+	PREFIX=/usr
+uninstall:
+	$(MAKE) -C contrib uninstall
+	$(MAKE) -C src uninstall
+
+clean:
+	$(MAKE) -C src clean
+	rm -rf dpkg/ debian/raidix-core/
+	# clean up the mess we've made
+	rm -r -f $(WORKDIR)
+ifeq ($(RDX_PREFIX),$(DOCKER_DEPLOY_PATH))
+	rm -rf $(DOCKER_DEPLOY_PATH)/*
+endif
+
+## Packaging
+
+rpm:
+# create directories for rpmbuild(8)
+	mkdir -p "$(WORKDIR)"/rpm/BUILD
+	mkdir -p "$(WORKDIR)"/rpm/RPMS
+	mkdir -p "$(WORKDIR)"/rpm/SOURCES
+	mkdir -p "$(WORKDIR)"/rpm/SRPMS
+# create a tarball
+	tar \
+	    --exclude build \
+	    --exclude-vcs \
+	    --transform "s|^|$(PKGNAME)-$(RDX_VERSION)/|S" \
+	    -czpf "$(WORKDIR)"/rpm/SOURCES/"$(PKGNAME)-$(RDX_VERSION)".tar.gz *
+# create RPM packages
+	rpmbuild -bb \
+		--buildroot='$(CWD)/$(WORKDIR)/rpm/BUILDROOT' \
+		--define "ARCH $(ARCH)" \
+		--define "_topdir $(CWD)/$(TOPDIR)" \
+		--define "PKG_NAME $(PKGNAME)" \
+		--define "VER $(RDX_VERSION)" \
+		--define "UNIT_TESTS $(UNIT_TESTS)" \
+		--define "BUILD_TYPE $(BUILD_TYPE)" \
+		--define "buildnum $(BUILD_NUMBER)" \
+		--define "kver $(KVER)" \
+		--define "commit_hash $(COMMIT_HASH)" \
+		--define "interlayer_version $(shell rpm -q --queryformat '%{RELEASE}' raidix-core-interlayer)" \
+		raidix-core.spec
+
+debian/changelog: debian/changelog.in
+	rm -rf debian/changelog
+	sed \
+		-e "s/%{rdx_version}/$(RDX_VERSION)-$(BUILD_NUMBER)/" \
+		-e "s/%{hash_commit}/$(COMMIT_HASH)/"  \
+		-e "s/%{date_time}/$(shell date +"Thu, %d Jun %Y %X")/"  \
+	  <debian/changelog.in >debian/changelog
+
+deb: clean debian/changelog
+	$(eval DISTRO = ELBRUS)
+	dpkg-buildpackage -us -a e2k-8c -b -d
+	mkdir dpkg/
+	mv ../raidix-core*.deb dpkg/
+	mv ../raidix-core*.changes dpkg/
+
+check-tbd:
+	# You NEED perl perl-List-MoreUtils perl-Getopt-Long
+	./utils/tbd src/ | tee $(TBD)
+	@[ ! -s $(TBD) ] && { rm -f $(TBD); true; } || { echo "Проверьте TBD. Приложен артефакт $(TBD)"; false; }
+
+check-changes:
+	./utils/rdx-diff-analizer.sh $(OLD_RDX_VERSION) $(RDX_VERSION) $(BUILD_NUMBER) /project/diff
+
+## Informational targets
+
+help:
+	@echo 'Usage: make [target]'
+	@echo
+	@echo 'Generic targets:'
+	@echo '    all:                 Build all'
+	@echo '    install:             Copy files to DESTDIR'
+	@echo '    clean:               Remove all generated files and build directory'
+	@echo
+	@echo 'Packaging:'
+	@echo '    rpm:                 Create rpm and srpm packages'
+	@echo
+	@echo 'Informational targets:'
+	@echo '    help:                Print this message'
+	@echo '    arch:                Print arch'
+	@echo '    version:             Print version'
+	@echo
+	@echo 'Development:'
+	@echo '    showdep:             Show required perl modules'
+	@echo '    deploy:              Deploy development environement'
+	@echo '    deploy-clean:        Clean development environement (#TODO)'
+	@echo
+	@echo 'Testing:'
+	@echo '    docker-test:         Run unit-tests in container'
+	@echo
+
+arch:
+	@echo $(ARCH)
+
+version:
+	@echo $(RDX_VERSION)
+
+
+## Development
+
+showdep:
+	utils/showdep $(PERLVER) src
+
+deploy: 
+	PREFIX    := /usr
+deploy: 
+	INSTALL   := $(PWD)/utils/install_ln
+deploy: 
+	HTML_DOCS := off
+deploy: 
+	install install-debug install-spawn install-interlayer install-template
